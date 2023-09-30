@@ -8,6 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 
 # This is a bitmask handling object from the DAP source code
+# https://github.com/sdss/mangadap
 from mangadap.dapfits import DAPCubeBitMask
 from mangadap.util.sampling import Resample
 from mangadap.util.fileio import channel_dictionary, channel_units

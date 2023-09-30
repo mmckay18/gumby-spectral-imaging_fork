@@ -1,7 +1,14 @@
 # gumby-spectral-imaging
 Contains code for the experiments in:
-- [Quantifying the robustness of deep multispectral segmentation models against natural perturbations and data poisoning](https://arxiv.org/abs/2305.11347).
-- [Impact of architecture on robustness and interpretability of multispectral deep neural networks](https://arxiv.org/abs/2309.12463). 
+- [Quantifying the robustness of deep multispectral segmentation models against natural perturbations and data poisoning](https://arxiv.org/abs/2305.11347): MSI_robustness  
+- [Impact of architecture on robustness and interpretability of multispectral deep neural networks](https://arxiv.org/abs/2309.12463): MSI_interpretability  
+
+## Environment
+In general, conda environments were generated using miniconda for CUDA11.4, python 3.10, torch 1.12, and rasterio 1.3. A conda environment is specified in `gby.yml`. In theory it can be created using the following command:  
+
+``` bash
+conda env create --file=environment.yml 
+```
 
 ## Citation
 
