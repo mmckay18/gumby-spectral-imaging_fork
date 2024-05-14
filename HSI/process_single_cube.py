@@ -17,7 +17,7 @@ from fits_utils import (
     process_cube,
     process_map
 )
-data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
+data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

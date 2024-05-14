@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 
-data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
+data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
 def bin_OH_labels(input, OH_bins = [8.40, 8.44, 8.48, 8.52, 8.56]):
     output = np.digitize(input, bins=OH_bins)
     return output

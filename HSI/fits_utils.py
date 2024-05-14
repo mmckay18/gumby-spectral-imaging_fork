@@ -15,7 +15,7 @@ from mangadap.util.fileio import channel_dictionary, channel_units
 from download_utils import download_single_cube
 
 data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
-gumby_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+alt_dir = pathlib.Path('/qfs/projects/manga')
 
 # load up manga catalog once -----------------------------------------
 manga_catalogue_path = data_dir / "raw/dapall-v3_1_1-3.1.0.fits"
@@ -48,9 +48,9 @@ def process_cube(
     if not fits_file.exists():
         print(f'\tNo LOGCUBE fits file exists!\n\t{fits_file}')
         fits_file.parent.mkdir(parents=True, exist_ok=True)
-        copy_from_path = gumby_dir / str(fits_file.relative_to(data_dir))
+        copy_from_path = alt_dir / str(fits_file.relative_to(data_dir))
         if copy_from_path.exists():
-            print('\tCopying from gumby dir')
+            print('\tCopying from alt dir')
             copy_result = subprocess.run([f'cp {copy_from_path.as_posix()} {fits_file}'], stdout=subprocess.PIPE, shell=True)
         else:
             print(f'\tDownloading')
@@ -119,9 +119,9 @@ def process_map(fits_file, label_file, save_file=True, label_task='logOH', diagn
 
     if not pathlib.Path(fits_file).exists():
         print(f'No MAP fits file exists!\n\t{fits_file}')
-        copy_from_path = gumby_dir / str(pathlib.Path(fits_file).relative_to(data_dir))
+        copy_from_path = alt_dir / str(pathlib.Path(fits_file).relative_to(data_dir))
         if copy_from_path.exists():
-            print('\tCopying from gumby dir')
+            print('\tCopying from alt dir')
             copy_result = subprocess.run([f'cp {copy_from_path.as_posix()} {fits_file}'], stdout=subprocess.PIPE, shell=True)
         else:
             print('\tDownloading')

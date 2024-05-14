@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import pandas as pd
 from typing import Callable
+import logging
 
 from utils import get_OH_bins_and_labels
 from hsi_proc_fns import h5_datapoint_loader, masked_h5_datapoint_loader, patchify_cube
@@ -14,6 +15,7 @@ from utils import(
     get_label_path_from_cube,
     get_patch_dir_from_cube_file
 )
+from aug_utils import CosineSimAug
 
 def npy_datapoint_loader(path):
     return np.load(path)
@@ -29,16 +31,17 @@ def ssftt_label(this_label):
     this_label = torch.Tensor([this_label-1]).type(torch.LongTensor)
     return this_label
 
-class ssftt_data(torch.nn.Module):
-    def __init__(self, normalize=False, mean=0.0162, std=0.0409) :
+class preprocData(torch.nn.Module):
+    def __init__(self, normalize=False, mean=0.0162, std=0.0409, add_extra_dim=True) :
         '''
         Initialize data processing function so that patches can be normalized
         default mean and std were calculated over the bpt train/val splits
         '''
-        super(ssftt_data, self).__init__()
+        super(preprocData, self).__init__()
         self.normalize=normalize
         self.mean = mean
         self.std = std
+        self.add_extra_dim = add_extra_dim
 
     def forward(self, this_patch):
         """Take in single patch (dim HxWxC) and output (1, C, H, W) 
@@ -53,18 +56,21 @@ class ssftt_data(torch.nn.Module):
         # Create Tensors
         this_patch = torch.from_numpy(this_patch).type(torch.FloatTensor)
 
-        # 1, C, H, W 
-        # note: model requires weird extra "1" dimension
-        this_patch = this_patch.unsqueeze(0)
-        #this_patch = this_patch.cuda()
+        if self.add_extra_dim:
+            # 1, C, H, W 
+            # note: model requires weird extra "1" dimension
+            this_patch = this_patch.unsqueeze(0)
         return this_patch
 
-class repatchSSFTT(torch.nn.Module):
-    def __init__(self, current_patch_size=7, new_patch_size=7, wave_inds=(0,2040), normalize=False, mean=0.0162, std=0.0409) :
+class repatchData(torch.nn.Module):
+    def __init__(self, current_patch_size=7, new_patch_size=7, wave_inds=(0,2040), normalize=False, 
+                 mean=0.0162, std=0.0409, add_extra_dim=True) :
         '''Reduces patch size and crops wavelength dimension
         Foward pass does the needed reshaping for SSFTT
         '''
-        super(repatchSSFTT, self).__init__()
+        super(repatchData, self).__init__()
+        self.new_patch_size=new_patch_size
+        self.add_extra_dim = add_extra_dim
         size_diff = (current_patch_size - new_patch_size)//2
         if current_patch_size == new_patch_size:
             self.spatial_slice = Ellipsis
@@ -90,7 +96,12 @@ class repatchSSFTT(torch.nn.Module):
 
         # 1, C, H, W 
         # note: model requires weird extra "1" dimension
-        patch = patch.unsqueeze(0)
+        if self.add_extra_dim:
+            patch = patch.unsqueeze(0)
+        if self.new_patch_size == 1:
+            # (batch, 1, C)
+            patch = patch.unsqueeze(0)
+            patch = patch.squeeze(-1).squeeze(-1)
         return patch
 
 def default_collate_fn(batch):
@@ -98,10 +109,7 @@ def default_collate_fn(batch):
     '''
     images = [image for image, _ in batch]
     images = torch.stack(images)
-    #images = images.cuda()
-
     targets = torch.LongTensor([target for _, target in batch])
-    #targets = targets.cuda()
     return images, targets
 
 def map_collate_fn(batch):
@@ -110,12 +118,9 @@ def map_collate_fn(batch):
     '''
     datapoints = [datapoint for datapoint, _, _ in batch]
     datapoints = torch.stack(datapoints)
-    #images = images.cuda()
-
     targets = torch.LongTensor([target for _, target,_ in batch])
 
     inds = [ind for _,_,ind in batch]
-    #targets = targets.cuda()
     return datapoints, targets, inds
 
 def concat_collate_fn(batch):
@@ -163,25 +168,38 @@ class HSIPatchDataset(Dataset):
         self,
         annotations_file,
         datapoint_loader: Callable=npy_datapoint_loader,
-        preprocess_fn: Callable=ssftt_data(normalize=False),
-        label_fn: Callable=BinLogOHLabels(OH_key='default')
+        preprocess_fn: Callable=preprocData(normalize=False),
+        label_fn: Callable=BinLogOHLabels(OH_key='extra'),
+        augment_data:bool=False,
+        augment_fn: Callable=CosineSimAug(max_deg=5, p=0.3, spec_p=1.0),
+        use_local_data:bool=False,
+        local_dir:str='/raid/byle431'
     ):
         """ Used with CSV of patches and labels
-        annotations_file: csv file with colums: patch path and label
-        datapoint_loader: function to use to load in data
-        label_loader: function to use to load in labels (default: numpy loader)
+        annotations_file: csv file with colums (patch path, label) for all datapoints in split
+        datapoint_loader: function to use to for datapoint I/O (i.e. load npy)
+        augment_fn: function used to apply data augmentation to datapoints (only used if augment_data=True)
         preprocess_fn: function to preprocess data with (default ssftt data)
-        label_fn: function to preprocess/encode labels
+        label_fn: function to preprocess/encode labels (i.e. turn numerical value into class bin)
+        use_local_data: CSV paths point to /qfs/*, this flag tells the model to use local_dir as prefix
+        local_dir: path prefix for data
         """
         self.annotations_file = annotations_file
         df = pd.read_csv(annotations_file)
         self.df = df
         self.data = df["data"]
+        if use_local_data:
+            self.data = df["data"].map(lambda x: x.replace('/qfs/projects/thidwick',local_dir))
+        # these are numerical values (i.e. 12+logOH)
         self.labels = df['label'].map(float)
+        # this is the mapped label (i.e. class=1 for classification or a normalized number for regression)
         self.encoded_labels = label_fn(self.labels)
         self.datapoint_loader = datapoint_loader
         self.preprocess_fn = preprocess_fn
         self.label_fn = label_fn
+        self.augment_data = augment_data
+        self.augment_fn = augment_fn
+        self.rng = np.random.default_rng()
     
     def get_labels(self):
         """This is used for the imabalanced dataset sampler"""
@@ -204,13 +222,23 @@ class HSIPatchDataset(Dataset):
         :return: tuple consisting of a datapoint and its labels.
         :rtype: tuple
         """
-        # encoded labels are integer values; self.labels is raw value
+        # encoded labels are mapped (e.g. integer values); self.labels is raw value
         label = self.encoded_labels[index]
         datapoint = self.data[index]
 
         # run through dataloader functions
         if self.datapoint_loader is not None:
             datapoint = self.datapoint_loader(datapoint)
+        
+        # add data augmentation
+        if self.augment_data:
+            if isinstance(self.augment_fn,list):
+                #select random choice of index and then assign self.augment_fn[index of choice](datapoint)
+                choice = self.rng.integers(0,len(self.augment_fn))
+                datapoint = self.augment_fn[choice](datapoint)
+
+            else:
+                datapoint = self.augment_fn(datapoint)
         
         # run through preprocess functions
         if self.preprocess_fn is not None:
@@ -223,11 +251,13 @@ class HSICubeDataset(Dataset):
         self,
         cube_file=None,
         datapoint_loader: Callable=npy_datapoint_loader,
-        preprocess_fn: Callable=ssftt_data(normalize=False),
-        label_fn: Callable=BinLogOHLabels(OH_key='default'),
+        preprocess_fn: Callable=preprocData(normalize=False),
+        label_fn: Callable=BinLogOHLabels(OH_key='extra'),
         patch_size=7,
         patch_norm: str='global',
         label_task: str='logOH',
+        use_local_data:bool=False,
+        local_dir:str='/raid/byle431'
     ):
         """ To run evaluation on whole cube
         cube_file: can be fits_file or cube_file
@@ -257,13 +287,15 @@ class HSICubeDataset(Dataset):
             patch_norm=patch_norm, 
             label_task=label_task
         )
+        if use_local_data:
+            patch_dir = pathlib.Path(str(patch_dir).replace('/qfs/projects/thidwick',local_dir))
 
         if not patch_dir.exists():
             raise FileExistsError
         
         list_of_patches = glob.glob(f'{patch_dir}/*.npy')
         if len(list_of_patches) == 0:
-            print('Patching datacube...')
+            logging.info('Patching datacube...')
             list_of_patch_dicts = patchify_cube(
                 cube_file, 
                 label_path,
@@ -272,9 +304,9 @@ class HSICubeDataset(Dataset):
                 patch_save_dir=patch_dir,
             )
             list_of_patches = [d['data'] for d in list_of_patch_dicts]
-            print('...done.')
+            logging.info('...done.')
         else:
-            print(f'Found {len(list_of_patches)} npy files in {patch_dir}')
+            logging.info(f'Found {len(list_of_patches)} npy files in {patch_dir}')
         
         # save as attributes
         self.cube_file = cube_file
@@ -283,6 +315,7 @@ class HSICubeDataset(Dataset):
         # path to patch file
         self.data = list_of_patches
         # label of patch
+        
         self.labels = np.array([float(self.data[i].strip('.npy').split('_')[-1]) for i in range(len(self.data))])
         self.encoded_labels = label_fn(self.labels)
         # index of patch in label map
@@ -407,7 +440,7 @@ class H5cubeDataset(Dataset):
         datapoint = self.data[index]
 
         if self.verbose:
-            print(datapoint, type(datapoint))
+            logging.info(datapoint, type(datapoint))
 
         # run through dataloader functions
         if self.datapoint_loader is not None:

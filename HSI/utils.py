@@ -6,8 +6,8 @@ label maps: data_dir / processed / labels / label_task / {plate-id}.npy
 
 import pathlib
 
-data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
-results_dir = pathlib.Path('/qfs/projects/gumby/results/weights/manga/')
+data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga')
 
 OH_bin_dict = {
     'default':{
@@ -16,9 +16,15 @@ OH_bin_dict = {
     },
     'extra':{
         'OH_bins':[8.34, 8.4, 8.44, 8.47, 8.5, 8.52, 8.55],
-        'OH_labels':['8.34', '8.40', '8.44', '8.47', '8.50', '8.52', '8.55', '8.64']
+        #'OH_labels':['8.34', '8.40', '8.44', '8.47', '8.50', '8.52', '8.55', '8.64']
+        'OH_labels':['8.31', '8.37', '8.42', '8.46', '8.48', '8.51', '8.54', '8.60']
     }
 }
+
+# adding in implicit edges and calculate labels as bin center
+# OH_bins.insert(0, 8.0)
+# OH_bins.append(9.0)
+# OH_labels = [f"{np.mean([OH_bins[i], OH_bins[i+1]]):.2f}" for i in range(len(OH_bins)-1)]
 
 def get_num_classes(key):
     num_classes = len(OH_bin_dict[key]['OH_labels'])
@@ -48,7 +54,7 @@ def plateid_to_fits_file(plateid):
 
 def get_label_path(fits_file, label_task='logOH'):
     """Returns path to GT label map (.npy file)
-    default: /qfs/projects/manga/data/manga/processed/labels/logOH
+    default: /qfs/projects/gumby/manga/processed/labels/logOH
     """
     assert label_task in ['BPT','logOH', 'N2']
     plate_ifu = '-'.join(fits_file.split('/')[-3:-1])
@@ -58,7 +64,7 @@ def get_label_path(fits_file, label_task='logOH'):
 
 def get_label_path_from_cube(cube_file, label_task='logOH'):
     """Returns path to GT label map (image)
-    default: /qfs/projects/manga/data/manga/processed/labels/logOH
+    default: /qfs/projects/gumby/manga/processed/labels/logOH
     """
     assert label_task in ['BPT','logOH','N2']
     label_dir = data_dir / f'processed/labels/{label_task}'
@@ -73,7 +79,7 @@ def get_cube_path(fits_file, label_task='logOH'):
     INPUTS:
         cube_file (str): path to manga fits file
         output_dir (str or Path obj): where to save output H5 file
-            default (/qfs/projects/manga/data/manga/processed/cubes/)
+            default (/qfs/projects/gumby/manga/processed/cubes/)
             files saved to output_dir/{plate}/{ifu}.h5
     """
     cube_dir = data_dir / f"processed/cubes"
@@ -87,9 +93,9 @@ def get_patch_dir_from_cube_file(cube_file, patch_norm="global", label_task='log
     """Get output path for input fits file
     INPUTS:
         cube_file (str): path to manga fits file
-        /qfs/projects/manga/data/manga/processed/cubes/{plate}/{ifu}.h5
+        /qfs/projects/gumby/manga/processed/cubes/{plate}/{ifu}.h5
 
-        /qfs/projects/manga/data/manga/processed/patches/logOH/global/{plate_id}/xxx.npy
+        /qfs/projects/gumby/manga/processed/patches/logOH/global/{plate_id}/xxx.npy
     """
     patch_dir = data_dir / f"processed/patches/{label_task}/{patch_norm}/"
     if type(cube_file) is str:
@@ -105,7 +111,7 @@ def get_patch_dir(fits_file, patch_norm="global", label_task='logOH'):
     INPUTS:
         cube_file (str): path to manga fits file
         output_dir (str or Path obj): where to save output H5 file
-            default (/qfs/projects/manga/data/manga/processed/cubes/)
+            default (/qfs/projects/gumby/manga/processed/cubes/)
             files saved to output_dir/{plate}/{ifu}.h5
     """
     patch_dir = data_dir / f"processed/patches/{label_task}/{patch_norm}/"

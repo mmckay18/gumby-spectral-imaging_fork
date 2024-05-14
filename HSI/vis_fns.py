@@ -9,7 +9,8 @@ def bin_OH_labels(input, OH_key='default'):
     output = np.digitize(input, bins=OH_bins)
     return output
 
-def create_OH_map(label_path, OH_key='default', use_int_labels=True):
+def create_OH_map(label_path, OH_key='default', use_int_labels=True, 
+                  task='classification',regression_norm='scaledmax'):
     OH_bins, _ = get_OH_bins_and_labels(OH_key)
     input = np.load(label_path)
     input = np.ma.masked_array(input, mask=(input == 0), fill_value=0)

@@ -8,7 +8,7 @@ from astropy.table import Table
 import argparse
 from fits_utils import BPT_diagnostic
 
-data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
+data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
 
 manga_catalogue_path = data_dir / 'raw/SDSS17Pipe3D_v3_1_1.fits'
 dat = Table.read(manga_catalogue_path, format='fits', hdu=1)

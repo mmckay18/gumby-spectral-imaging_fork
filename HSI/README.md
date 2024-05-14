@@ -2,7 +2,7 @@
 
 Code for training and evaluating a deep learning model on MaNGA spectral data.
 
-We gratefully acknowledge the use of the Spectral-Spatial Feature Tokenization Transformer model (Sun et al. 2022; [github](https://github.com/zgr6010/HSI_SSFTT)) in `HSI_SSFTT.py` and the MaNGA Data Analysis Pipeline ([github](https://github.com/sdss/mangadap)) in `fits_utils.py`. 
+We gratefully acknowledge the use of the Spectral-Spatial Feature Tokenization Transformer model (Sun et al. 2022; [github](https://github.com/zgr6010/HSI_SSFTT)) in `HSI_SSFTT.py`, the SimpleNet architecture (Hasanpour et al. 2022; [github](https://github.com/Coderx7/SimpleNet_Pytorch)) in `HSI_SIMPLENET.py` and the MaNGA Data Analysis Pipeline ([github](https://github.com/sdss/mangadap)) in `fits_utils.py`. 
 
 ### MaNGA data processing
 These scripts use a standalone conda environment built from the MaNGA DAP instructions [here](https://github.com/sdss/mangadap#installation). 
@@ -13,7 +13,7 @@ These scripts use a standalone conda environment built from the MaNGA DAP instru
 - `download_utils.py`: for downloading missing datacubes
 
 ## Overview
-The remaining scripts use a conda environment built for CUDA11.4 with python 3.10 and pytorch 1.13, specified in `hsi.yml`.
+The remaining scripts use a conda environment built for CUDA11.4 with python 3.10 and pytorch 1.13, specified in `hsi.yml` (see also `conda_env.md`).
 
 ### Utilities
 - `utils.py`: functions for filepaths (fits file to label file etc.)
@@ -25,15 +25,17 @@ The remaining scripts use a conda environment built for CUDA11.4 with python 3.1
 - `calc_data_stats.py`: for generating PCA representations of datacubes
 
 ### Model and Dataloaders
-- `HSI_SSFTT.py`: This defines the model architecture. Fiducial model returned from function get_SSFTT_model.
+- `HSI_SSFTT.py`: This defines the SSFTT model architecture. Fiducial model returned from function get_SSFTT_model.
+- `HSI_SIMPLENET.py`: This defines the SimpleNet model architecture.
 - `data_fns.py`: This contains dataset/dataloader functions and any preprocessing/collate functions.
+- `aug_utils.py`: Data augmentations for dataloader.
 
 ### Training
-- `run_SSFTT_training.py`: this is the main training script.
+- `run_training.py`: this is the main training script.
 
 ### Evaluation
 - `demo.ipynb`: visualize predictions on a single datacube; look at training curves and evaluate test splits with trained model.
-- `eval_fns.py`: includes a prediction function, a function to load a trained model, a function that runs a trained model on a single data cube, and a function that runs a trained model on the full test split.
+- `eval_utils.py`: includes a prediction function, a function to load a trained model, a function that runs a trained model on a single data cube, and a function that runs a trained model on the full test split.
 - `vis_fns.py`: Code that creates graphics to compare predicted and ground truth maps for a datacube. 
 
 ## Data Structure

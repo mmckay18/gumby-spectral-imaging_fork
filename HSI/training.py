@@ -9,6 +9,7 @@ from copy import deepcopy
 from tqdm.auto import tqdm
 from typing import Callable
 from dataclasses import dataclass
+import logging
 
 @dataclass(eq=False)
 class Acc(nn.Module):
@@ -34,7 +35,8 @@ def train(model: nn.Module,
     save_weights:bool=False,
     save_interval:int = None, 
     loss_function:nn.Module=nn.CrossEntropyLoss(),
-    acc_function: Callable = Acc(),
+    loss_type:str='classification',
+    performance_metric: Callable = Acc(),
     device:torch.device or int=None,
     distributed:bool=False,
     rank:int=None,
@@ -95,7 +97,7 @@ def train(model: nn.Module,
     # Only print/save output in one of the distributed processes
     log_process = (not distributed) or (distributed and rank==0)
     if log_process:
-        print(f'storing results in {out_dir}')
+        logging.info(f'storing results in {out_dir}')
         if os.path.exists(out_dir) == False:
             pathlib.Path(out_dir).mkdir(parents=True)
         with open(os.path.join(out_dir, 'log.txt'), 'w') as f:
@@ -118,8 +120,8 @@ def train(model: nn.Module,
     else:
         model.to(device)
         loss_function.to(device)
-        if isinstance(acc_function, nn.Module):
-            acc_function.to(device)
+        if isinstance(performance_metric, nn.Module):
+            performance_metric.to(device)
     # In both optimizers below, we only apply weight decay to the weights :-)
     if optimizer=='sgd':
         optimizer = optim.SGD([
@@ -131,51 +133,66 @@ def train(model: nn.Module,
             {'params': [x[1] for x in model.named_parameters() if re.search('weight', x[0])!= None], 'weight_decay': decay},
             {'params': [x[1] for x in model.named_parameters() if re.search('weight', x[0]) == None], 'weight_decay': 0.0}
             ], lr=lr, betas=(0.9, 0.999))
+    # reduce LR when metric stops increasing (like an accuracy)
+    lr_mode = 'max'
+    # reduce LR when metric stops decreasing (like MSE)
+    if loss_type == 'regression':
+        lr_mode = 'min'
+
     # drop lr by factor of patience_factor if val acc hasn't improved (relatively) by 1% for last ``patience``
     # epochs. There could be a more optimal strategy, this was chosen arbitrarily
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='max', factor=patience_factor, 
-        patience=patience, threshold=0.01, threshold_mode='rel', min_lr=min_lr)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer=optimizer, 
+        mode=lr_mode, 
+        factor=patience_factor, 
+        patience=patience, 
+        threshold=0.01, 
+        threshold_mode='rel', 
+        min_lr=min_lr
+    )
     # amp stuff
     scaler = GradScaler(enabled=use_amp)
     # Helper values for keeping track of best weights 
-    best_acc = 0.0
+    best_metric = 0.0
+    if loss_type == 'regression':
+        best_metric = 10000.0
     best_wts = deepcopy(model.state_dict())
     # Keep track of learning curves 
     train_curve_loss = torch.zeros((num_epochs,), dtype=torch.float).to(device)
-    train_curve_acc = torch.zeros((num_epochs,), dtype=torch.float).to(device)
-    val_curve_acc = torch.zeros((num_epochs,), dtype=torch.float).to(device)
+    train_curve_metric = torch.zeros((num_epochs,), dtype=torch.float).to(device)
+    val_curve_metric = torch.zeros((num_epochs,), dtype=torch.float).to(device)
     val_curve_loss = torch.zeros((num_epochs,), dtype=torch.float).to(device)
     lr_curve = torch.zeros((num_epochs,), dtype=torch.float).to(device)
     # We need these to synchronize loss and accuracy between processes  
     if distributed:
         train_loss = torch.tensor(0.0).cuda(device)
-        val_acc = torch.tensor(0.0).cuda(device)
+        val_metric = torch.tensor(0.0).cuda(device)
         learn_rate = torch.tensor(0.0).cuda(device)    
 
-    def save_stuff(out_dir, train_curve_acc, train_curve_loss, 
-        val_curve_acc, val_curve_loss, 
+    def save_stuff(out_dir, train_curve_metric, train_curve_loss, 
+        val_curve_metric, val_curve_loss, 
         lr_curve, best_wts,
         epoch_index: int = None):
         # Make sure we only save from one distributed process (paranoia)
         if log_process:
             if epoch_index: # trim these arrays
-                (train_curve_acc, train_curve_loss, 
-                 val_curve_acc, val_curve_loss, 
+                (train_curve_metric, train_curve_loss, 
+                 val_curve_metric, val_curve_loss, 
                  lr_curve) = (x[:epoch_index+1] 
-                                for x in (train_curve_acc, train_curve_loss, 
-                                    val_curve_acc, val_curve_loss, 
+                                for x in (train_curve_metric, train_curve_loss, 
+                                    val_curve_metric, val_curve_loss, 
                                     lr_curve)
                                 )
-            torch.save(train_curve_acc.cpu(), os.path.join(out_dir, 'train_curve_acc.pt'))
+            torch.save(train_curve_metric.cpu(), os.path.join(out_dir, 'train_curve_metric.pt'))
             torch.save(train_curve_loss.cpu(), os.path.join(out_dir, 'train_curve_loss.pt'))
-            torch.save(val_curve_acc.cpu(), os.path.join(out_dir, 'val_curve_acc.pt'))
+            torch.save(val_curve_metric.cpu(), os.path.join(out_dir, 'val_curve_metric.pt'))
             torch.save(val_curve_loss.cpu(), os.path.join(out_dir, 'val_curve_loss.pt'))
             torch.save(lr_curve.cpu(), os.path.join(out_dir, 'lr_curve.pt'))
             torch.save(best_wts, os.path.join(out_dir, 'best_wts.pt'))
             final_wts = deepcopy(model.state_dict())
             torch.save(final_wts, os.path.join(out_dir, 'final_wts.pt'))
             msg = f'saved learning curves and weights to {out_dir}'
-            print(msg)
+            logging.info(msg)
 
     # Outer epoch loop
     epoch_desc = f'Epoch'
@@ -216,8 +233,10 @@ def train(model: nn.Module,
                     # temporary fix to work with torch segmentation models
                     if type(output) is not torch.Tensor:
                         output = output['out']
+                    if loss_type=='regression':
+                        output = output.squeeze(1)
                     loss = loss_function(output, labels)
-                    train_acc = acc_function(output, labels)
+                    train_metric = performance_metric(output, labels)
                 # amp backprop
                 scaler.scale(loss).backward()
                 if clip_gradients:
@@ -225,11 +244,11 @@ def train(model: nn.Module,
                 scaler.step(optimizer)
                 scaler.update()
                 train_curve_loss[epoch_index] += loss.item()
-                train_curve_acc[epoch_index] += train_acc.item()
+                train_curve_metric[epoch_index] += train_metric.item()
                 if (not disable_progress_bar) and log_process:
-                    train_gen.set_description(f'{train_desc}, loss: {loss.item():.4g}, acc: {train_acc.item():.4g}')
+                    train_gen.set_description(f'{train_desc}, loss: {loss.item():.4g}, metric: {train_metric.item():.4g}')
             train_curve_loss[epoch_index] /= len(train_dataloader)
-            train_curve_acc[epoch_index] /= len(train_dataloader)
+            train_curve_metric[epoch_index] /= len(train_dataloader)
         
         # Perform the evaluation step of the training loop
         eval_gen = eval_dataloader
@@ -254,15 +273,17 @@ def train(model: nn.Module,
                 with autocast():
                     output = model(sample)
                     if type(output) is not torch.Tensor:
-                        output = output['out']                
+                        output = output['out']   
+                    if loss_type=='regression':
+                        output = output.squeeze(1)             
                     loss = loss_function(output, labels)
-                    eval_acc = acc_function(output, labels)
+                    eval_metric = performance_metric(output, labels)
             val_curve_loss[epoch_index] += loss.item()
-            val_curve_acc[epoch_index] += eval_acc
+            val_curve_metric[epoch_index] += eval_metric
             if (not disable_progress_bar) and log_process:
-                eval_gen.set_description(f'{eval_desc}, loss: {loss.item():.4g}, acc: {eval_acc.item():.4g}')
+                eval_gen.set_description(f'{eval_desc}, loss: {loss.item():.4g}, metric: {eval_metric.item():.4g}')
         val_curve_loss[epoch_index] /= len(eval_dataloader)
-        val_curve_acc[epoch_index] /= len(eval_dataloader)
+        val_curve_metric[epoch_index] /= len(eval_dataloader)
 
         lr_curve[epoch_index] = torch.tensor([p['lr'] for p in optimizer.param_groups]).mean()
         # Most complicated piece of distributed case: we need to synchronize
@@ -275,9 +296,9 @@ def train(model: nn.Module,
             train_loss = train_curve_loss[epoch_index]
             dist.all_reduce(train_loss.cuda(device), op = dist.ReduceOp.SUM)
             train_curve_loss[epoch_index] = train_loss/torch.cuda.device_count()
-            val_acc = val_curve_acc[epoch_index]
-            dist.all_reduce(val_acc.cuda(device), op=dist.ReduceOp.SUM)
-            val_curve_acc[epoch_index] = val_acc/torch.cuda.device_count()
+            val_metric = val_curve_metric[epoch_index]
+            dist.all_reduce(val_metric.cuda(device), op=dist.ReduceOp.SUM)
+            val_curve_metric[epoch_index] = val_metric/torch.cuda.device_count()
             lr_curve[epoch_index] = torch.tensor([p['lr'] for p in optimizer.param_groups]).mean()
             learn_rate = lr_curve[epoch_index]
             dist.all_reduce(learn_rate.cuda(device), op=dist.ReduceOp.SUM)
@@ -285,9 +306,15 @@ def train(model: nn.Module,
         # Check if current validation accuracy is the best so far (if
         # distributed, only need to do this in the logging process)
         if log_process:
-            if val_curve_acc[epoch_index] > best_acc:
+            # accuracy INCREASES for normal tasks
+            improvement_conditional = val_curve_metric[epoch_index] > best_metric
+            # for regression: better model has SMALLER val acc
+            if loss_type == 'regression':
+                improvement_conditional = val_curve_metric[epoch_index] < best_metric
+            
+            if improvement_conditional:
                 # If so, update best accuracy and best weights 
-                best_acc = val_curve_acc[epoch_index]
+                best_metric = val_curve_metric[epoch_index]
                 best_wts = deepcopy(model.state_dict())
                 better_val_loss = True
             else:
@@ -296,19 +323,19 @@ def train(model: nn.Module,
         # this should be done in all processes (based on examples at
         # https://github.com/pytorch/examples/blob/main/imagenet/main.py, but there
         # is literally no doc on the topic)
-        scheduler.step(val_curve_acc[epoch_index])
+        scheduler.step(val_curve_metric[epoch_index])
         # Save weights at specified interval and if we just hit a new best
         if (save_weights and log_process):
             if (epoch_index % save_interval == 0) or better_val_loss:
-                save_stuff(out_dir, train_curve_acc, train_curve_loss, val_curve_acc, val_curve_loss, lr_curve, best_wts)
+                save_stuff(out_dir, train_curve_metric, train_curve_loss, val_curve_metric, val_curve_loss, lr_curve, best_wts)
         # print info
         if log_process:
             msg =  f'{epoch_desc}: {epoch_index}, train loss: {train_curve_loss[epoch_index]:.4g}, ' \
-                + f'val acc: {val_curve_acc[epoch_index]:.4g}, better? {better_val_loss:.4g}, lr: {lr_curve[epoch_index]:.4g}'
+                + f'val metric: {val_curve_metric[epoch_index]:.4g}, better? {better_val_loss:.4g}, lr: {lr_curve[epoch_index]:.4g}'
             if not disable_progress_bar:
                 epoch_loop.set_description(msg)
             else:
-                print(msg)
+                logging.info(msg)
         
         # for some reason this isn't triggering...
         lr_condition = torch.allclose(
@@ -316,21 +343,21 @@ def train(model: nn.Module,
             torch.tensor([l for l in scheduler.min_lrs]).mean().to(device))
         if lr_condition:
             if log_process:
-                save_stuff(out_dir, train_curve_acc, train_curve_loss,  
-                    val_curve_acc, val_curve_loss, lr_curve, best_wts)
+                save_stuff(out_dir, train_curve_metric, train_curve_loss,  
+                    val_curve_metric, val_curve_loss, lr_curve, best_wts)
                 err_msg = f'hit minimum lr of {torch.tensor([l for l in scheduler.min_lrs]).mean():.4g}'
-                err_msg = err_msg + f'best val acc: {val_curve_acc.max().item():.4g}'
-                print(err_msg)
+                err_msg = err_msg + f'best val metric: {val_curve_metric.max().item():.4g}'
+                logging.info(err_msg)
             break  
 
     # ensure we save after loop ends ...
     if (save_weights and log_process):
-        save_stuff(out_dir, train_curve_acc, train_curve_loss, val_curve_acc, val_curve_loss, lr_curve, best_wts)
+        save_stuff(out_dir, train_curve_metric, train_curve_loss, val_curve_metric, val_curve_loss, lr_curve, best_wts)
     # Load up the best weights, in case this is being used interactively 
     # only makes sense if not distributed (??)
     if not distributed:
         model.load_state_dict(best_wts)
     if eval_only:
-        return val_curve_acc
+        return val_curve_metric
     else:
         return None
