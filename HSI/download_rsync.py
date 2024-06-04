@@ -18,6 +18,7 @@ df = pd.read_csv(
 plateifu_list = df["plateifu"]
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
 for plateifu in plateifu_list:
+    print(plateifu)
     plate, ifu = plateifu.split("-")
 
     # Retrieves DAP Maps
