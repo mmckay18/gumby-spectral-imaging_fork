@@ -4,14 +4,14 @@ import os
 import pandas as pd
 
 
-pw_file = "/Users/mmckay/Desktop/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/sdss_pw.txt"  # SDSS Collab password file
+pw_file = "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/sdss_pw.txt"  # SDSS Collab password file
 
 # Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
 
 # DAP Maps for BBRD sample
 # Read in csv with BreakBRD plateifu
 df = pd.read_csv(
-    "/Users/mmckay/Desktop/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
+    "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
 )
 
 # Interate through the plateifu and download MPL11 DAP Maps
