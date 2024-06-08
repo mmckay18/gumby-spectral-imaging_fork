@@ -25,7 +25,7 @@ df = pd.read_csv(
 plateifu_list = df["plateifu"]
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
 for plateifu in plateifu_list[:10]:
-    plate, ifu = plateifu.split("-")
+    plate, ifu = plateifu.split("-")[0].strip(), plateifu.split("-")[1].strip()
     print(plate, ifu)
     print(f'rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/*manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz')
 
