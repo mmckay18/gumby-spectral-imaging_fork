@@ -25,7 +25,7 @@ df = pd.read_csv(
 plateifu_list = df["plateifu"]
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
 for plateifu in plateifu_list[:5]:
-    plate, ifu = plateifu.split("-")[0].strip(), plateifu.split("-")[1].strip()
+    plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
     # print(plate, ifu)
     file_url, save_path = get_url(plateifu, key=key)
     print(file_url)
