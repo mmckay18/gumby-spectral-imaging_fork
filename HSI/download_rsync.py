@@ -26,6 +26,7 @@ plateifu_list = df["plateifu"].to_list()
 print(plateifu_list[:5])
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
 for plateifu in plateifu_list[:5]:
+    plateifu = plateifu.strip(" \t")
     plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
     # print(plate, ifu)
     file_url, save_path = get_url(plateifu, key=key)
