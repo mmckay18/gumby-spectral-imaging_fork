@@ -37,5 +37,5 @@ for plateifu in plateifu_list:
 
 # From Nell download_utils.py
 # fits_file = '/gscratch/astro/mmckay18/DATA/raw/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'
-fits_file = f'manga-{plate}-{ifu}-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'
-download_single_cube(fits_file, key='LOGCUBE')
+    fits_file = f'manga-{plate}-{ifu}-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'
+    download_single_cube(fits_file, key='LOGCUBE')
