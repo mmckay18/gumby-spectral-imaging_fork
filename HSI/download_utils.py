@@ -7,7 +7,7 @@ from time import time as timer
 #from gumby_utils.constants import data_dir, thread_limit
 #thread_limit(1)
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga/')
+data_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA/')
 fits_dir = data_dir / "raw"
 
 def get_url(PLATEIFU, key='MAPS'):
