@@ -42,4 +42,5 @@ def download_single_cube(fits_file, key='LOGCUBE'):
     plateifu = '-'.join(fits_file.split('/')[-3:-1])
     output = get_url(plateifu, key=key)
     results = fetch_and_save(*output)
+    print(output, results)
     return results
