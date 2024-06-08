@@ -24,8 +24,7 @@ df = pd.read_csv(
 # Interate through the plateifu and download MPL11 DAP Maps
 plateifu_list = df["plateifu"]
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
-for plateifu in plateifu_list:
-    print(plateifu)
+for plateifu in plateifu_list[:10]:
     plate, ifu = plateifu.split("-")
 
 #     # Retrieves DAP Maps
@@ -37,5 +36,6 @@ for plateifu in plateifu_list:
 
 # From Nell download_utils.py
 # fits_file = '/gscratch/astro/mmckay18/DATA/raw/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'
-    fits_file = f'manga-{plate}-{ifu}-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'
+    fits_file = f'manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz'
+    print(fits_file)
     download_single_cube(fits_file, key='LOGCUBE')
