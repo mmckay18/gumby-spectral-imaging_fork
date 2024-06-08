@@ -65,4 +65,4 @@ def remove_empty_dirs(path):
 
 
 # Clean directory tree
-remove_empty_dirs(path_to_clean = "/gscratch/astro/mmckay18/DATA/raw/")
+remove_empty_dirs(path="/gscratch/astro/mmckay18/DATA/raw/")
