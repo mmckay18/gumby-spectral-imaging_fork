@@ -24,19 +24,26 @@ df = pd.read_csv(
 # Interate through the plateifu and download MPL11 DAP Maps
 plateifu_list = df["plateifu"]
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
-for plateifu in plateifu_list[:10]:
+for plateifu in plateifu_list[:800]:
     plate, ifu = plateifu.split("-")[0].strip(), plateifu.split("-")[1].strip()
     print(plate, ifu)
-    print(f'rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/*manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz')
+    file_url, save_path = get_url(plateifu, key=key)
+    print(file_url)
+    print(save_path)
+    # print(f'rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz')
 
     # Make directory for cube and maps
-    os.makedirs(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/", exist_ok=True)
+    print('Make directory for cube and maps')
+    if not os.path.exists(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/"):
+        os.makedirs(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/", exist_ok=True)
+    else:
+        print(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/ already exists")
 
     # Retrieves DAP Maps
     # os.system(f"rsync -avz --password-file {pw_file} rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz /gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/")
     
     # Retrieves DAP Maps
-    os.system(f"rsync -avz --password-file {pw_file} rsync://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz /gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/")
+    os.system(f"rsync -avz --password-file {pw_file} --no-motd rsync://data.sdss.org/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz /gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/")
 
 #     # https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz
 
