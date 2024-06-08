@@ -22,7 +22,8 @@ df = pd.read_csv(
 )
 
 # Interate through the plateifu and download MPL11 DAP Maps
-plateifu_list = df["plateifu"]
+plateifu_list = df["plateifu"].to_list()
+print(plateifu_list[:5])
 key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
 for plateifu in plateifu_list[:5]:
     plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
@@ -32,12 +33,12 @@ for plateifu in plateifu_list[:5]:
     print(save_path)
     # print(f'rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz')
 
-    # Make directory for cube and maps
-    print('Make directory for cube and maps')
-    if not os.path.exists(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/"):
-        os.makedirs(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/", exist_ok=True)
-    else:
-        print(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/ already exists")
+    # # Make directory for cube and maps
+    # print('Make directory for cube and maps')
+    # if not os.path.exists(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/"):
+    #     os.makedirs(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/", exist_ok=True)
+    # else:
+    #     print(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/ already exists")
 
     # Retrieves DAP Maps
     # os.system(f"rsync -avz --password-file {pw_file} rsync://sdss@dtn01.sdss.utah.edu/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz /gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/")
