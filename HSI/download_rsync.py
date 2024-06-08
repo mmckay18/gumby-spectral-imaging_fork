@@ -22,28 +22,26 @@ def remove_empty_dirs(path):
                 print(f"Removed empty directory: {dir_path}")
 
 
-# # SDSS Collab password file
+# SDSS Collab password file
 # pw_file = "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/sdss_pw.txt"  
 
-# # Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
+# Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
 
-# # DAP Maps for BBRD sample
-# # Read in csv with BreakBRD plateifu
-# df = pd.read_csv(
-#     "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
-# )
+df = pd.read_csv(
+    "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
+)
 
-# # Interate through the plateifu and download MPL11 DAP Maps
-# plateifu_list = df["plateifu"].to_list()
-# # print(plateifu_list[:5])
-# key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
-# for plateifu in plateifu_list[:800]:
-#     plateifu = plateifu.strip(" \t")
-#     plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
-#     file_url, save_path = get_url(plateifu, key=key)
-#     # print(file_url)
-#     # print(save_path)
-#     results = fetch_and_save(file_url, save_path)
+# Interate through the plateifu and download MPL11 DAP Maps
+plateifu_list = df["plateifu"].to_list()
+# print(plateifu_list[:5])
+key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
+for plateifu in plateifu_list[:]:
+    plateifu = plateifu.strip(" \t")
+    plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
+    file_url, save_path = get_url(plateifu, key=key)
+    # print(file_url)
+    # print(save_path)
+    results = fetch_and_save(file_url, save_path)
 
     # # Make directory for cube and maps
     # print('Make directory for cube and maps')
@@ -52,10 +50,10 @@ def remove_empty_dirs(path):
     # else:
     #     print(f"/gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/ already exists")
     
-    # Retrieves DAP Maps
+    # # Retrieves DAP Maps
     # os.system(f"rsync -avz --password-file {pw_file} --no-motd rsync://data.sdss.org/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/{plate}/{ifu}/manga-{plate}-{ifu}-{key}-SPX-MILESHC-MASTARSSP.fits.gz /gscratch/astro/mmckay18/DATA/raw/{plate}/{ifu}/")
 
-#     # https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz
+    # https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/SPX-MILESHC-MASTARSSP/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz
 
 
 # fits_file = '/gscratch/astro/mmckay18/DATA/raw/10001/12701/manga-10001-12701-LOGCUBE-SPX-MILESHC-MASTARSSP.fits.gz'

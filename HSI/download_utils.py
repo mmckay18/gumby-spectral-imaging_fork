@@ -4,6 +4,7 @@ import urllib.request
 import shutil
 from multiprocessing.pool import ThreadPool
 from time import time as timer
+import os
 #from gumby_utils.constants import data_dir, thread_limit
 #thread_limit(1)
 
@@ -42,5 +43,17 @@ def download_single_cube(fits_file, key='LOGCUBE'):
     plateifu = '-'.join(fits_file.split('/')[-3:-1])
     output = get_url(plateifu, key=key)
     results = fetch_and_save(*output)
-    print(output, results)
+    # print(output, results)
     return results
+
+
+def remove_empty_dirs(path):
+    # Walk through the directory tree, from bottom to top
+    for root, dirs, files in os.walk(path, topdown=False):
+        for dir in dirs:
+            dir_path = os.path.join(root, dir)
+            # Check if the directory is empty
+            if not os.listdir(dir_path):
+                # Remove the empty directory
+                os.rmdir(dir_path)
+                print(f"Removed empty directory: {dir_path}")
