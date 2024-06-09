@@ -5,6 +5,8 @@ import shutil
 from multiprocessing.pool import ThreadPool
 from time import time as timer
 import os
+from astropy.io import fits
+import pandas as pd
 #from gumby_utils.constants import data_dir, thread_limit
 #thread_limit(1)
 
@@ -57,3 +59,37 @@ def remove_empty_dirs(path):
                 # Remove the empty directory
                 os.rmdir(dir_path)
                 print(f"Removed empty directory: {dir_path}")
+
+
+def download_file(url, save_path):
+    """
+    Download a file from a specified URL to a target directory.
+
+    Parameters:
+    - url: The URL of the file to download.
+    - save_path: The full path (including filename) where the file will be saved.
+    """
+    try:
+        # Download the file from `url` and save it locally under `save_path`
+        urllib.request.urlretrieve(url, save_path)
+        print(f"File downloaded successfully and saved as {save_path}")
+    except Exception as e:
+        print(f"Failed to download the file. Error: {e}")
+
+
+def fits_to_dataframe(fits_file_path):
+    """
+    Read a FITS file and convert its data to a pandas DataFrame.
+
+    Parameters:
+    - fits_file_path: Path to the FITS file.
+
+    Returns:
+    - DataFrame containing the data from the FITS file.
+    """
+    with fits.open(fits_file_path) as hdul:
+        # Assuming the data is in the first extension (change if needed)
+        data = hdul[1].data
+        # Convert to a pandas DataFrame
+        df = pd.DataFrame(data)
+    return df
