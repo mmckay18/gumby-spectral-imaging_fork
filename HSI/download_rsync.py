@@ -13,25 +13,25 @@ from download_utils import *
 
 
 
-# SDSS Collab password file
-# pw_file = "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/sdss_pw.txt"  
+# # SDSS Collab password file
+# # pw_file = "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/sdss_pw.txt"  
 
-# Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
+# # Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
 
-# get dap and pipe3d catalogs for plateifu
-dap_url = "https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/dapall-v3_1_1-3.1.0.fits"
-dapall_save_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"  # Update this path to your specific remote directory path
-download_file(dap_url, dapall_save_path)
-dapall_fits_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"
-dapall_df = fits_to_dataframe(dapall_fits_path)
-dapall_df.to_csv("/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_subsample.csv", index=False)
-dap_df = pd.read_csv("/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv", nrows=5)
-print(dap_df['plateifu'].to_list())
+# # get dap and pipe3d catalogs for plateifu
+# dap_url = "https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/dapall-v3_1_1-3.1.0.fits"
+# dapall_save_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"  # Update this path to your specific remote directory path
+# download_file(dap_url, dapall_save_path)
+# dapall_fits_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"
+# dapall_df = fits_to_dataframe(dapall_fits_path)
+# dapall_df.to_csv("/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_subsample.csv", index=False)
+# dap_df = pd.read_csv("/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv", nrows=5)
+# print(dap_df['plateifu'].to_list())
 
-plateifu_list = dap_df['plateifu'].to_list()
-with open('/gscratch/astro/mmckay18/DATA/plateifu_list.txt', 'w') as file:
-    for plateifu in plateifu_list:
-        file.write(plateifu + '\n')
+# plateifu_list = dap_df['plateifu'].to_list()
+# with open('/gscratch/astro/mmckay18/DATA/plateifu_list.txt', 'w') as file:
+#     for plateifu in plateifu_list:
+#         file.write(plateifu + '\n')
 
 
 # pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v2_4_3/2.4.3/pipe3d-v2_4_3-2.4.3.fits"
@@ -56,18 +56,21 @@ with open('/gscratch/astro/mmckay18/DATA/plateifu_list.txt', 'w') as file:
 #     for plateifu in plateifu_list:
 #         file.write(plateifu + '\n')
 
+df = pd.read_csv(
+    "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
+)
 
-# # Interate through the plateifu and download MPL11 DAP Maps
-# plateifu_list = df["plateifu"].to_list()
-# # print(plateifu_list[:5])
-# key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
-# for plateifu in plateifu_list[:]:
-#     plateifu = plateifu.strip(" \t")
-#     plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
-#     file_url, save_path = get_url(plateifu, key=key)
-#     # print(file_url)
-#     # print(save_path)
-#     results = fetch_and_save(file_url, save_path)
+# Interate through the plateifu and download MPL11 DAP Maps
+plateifu_list = df["plateifu"].to_list()
+# print(plateifu_list[:5])
+key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
+for plateifu in plateifu_list[:3000]:
+    plateifu = plateifu.strip(" \t")
+    plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
+    file_url, save_path = get_url(plateifu, key=key)
+    # print(file_url)
+    # print(save_path)
+    results = fetch_and_save(file_url, save_path)
 
 #     # # Make directory for cube and maps
 #     # print('Make directory for cube and maps')
@@ -88,5 +91,5 @@ with open('/gscratch/astro/mmckay18/DATA/plateifu_list.txt', 'w') as file:
 #     # download_single_cube(fits_file, key='LOGCUBE')
 
 
-# # Clean directory tree
-# remove_empty_dirs(path="/gscratch/astro/mmckay18/DATA/raw/")
+# Clean directory tree
+remove_empty_dirs(path="/gscratch/astro/mmckay18/DATA/raw/")
