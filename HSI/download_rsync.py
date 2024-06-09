@@ -34,7 +34,7 @@ from download_utils import *
 #         file.write(plateifu + '\n')
 
 print("Downloading Pipe3D data...")
-pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v2_4_3/2.4.3/pipe3d-v2_4_3-2.4.3.fits"
+pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v3_1_1/3.1.1/SDSS17Pipe3D_v3_1_1.fits"
 pipe3d_save_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"  # Update this path to your specific remote directory path
 download_file(pipe3d_url, pipe3d_save_path)
 # # Paths to the FITS files
