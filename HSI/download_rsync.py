@@ -33,11 +33,10 @@ from download_utils import *
 #     for plateifu in plateifu_list:
 #         file.write(plateifu + '\n')
 
-
-# pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v2_4_3/2.4.3/pipe3d-v2_4_3-2.4.3.fits"
-
-# pipe3d_save_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"  # Update this path to your specific remote directory path
-# download_file(pipe3d_url, pipe3d_save_path)
+print("Downloading Pipe3D data...")
+pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v2_4_3/2.4.3/pipe3d-v2_4_3-2.4.3.fits"
+pipe3d_save_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"  # Update this path to your specific remote directory path
+download_file(pipe3d_url, pipe3d_save_path)
 # # Paths to the FITS files
 # pipe3d_fits_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"
 # # Convert to DataFrames
@@ -56,21 +55,21 @@ from download_utils import *
 #     for plateifu in plateifu_list:
 #         file.write(plateifu + '\n')
 
-df = pd.read_csv(
-    "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
-)
+# df = pd.read_csv(
+#     "/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_random_subsample.csv"
+# )
 
-# Interate through the plateifu and download MPL11 DAP Maps
-plateifu_list = df["plateifu"].to_list()
-# print(plateifu_list[:5])
-key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
-for plateifu in plateifu_list[:3000]:
-    plateifu = plateifu.strip(" \t")
-    plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
-    file_url, save_path = get_url(plateifu, key=key)
-    # print(file_url)
-    # print(save_path)
-    results = fetch_and_save(file_url, save_path)
+# # Interate through the plateifu and download MPL11 DAP Maps
+# plateifu_list = df["plateifu"].to_list()
+# # print(plateifu_list[:5])
+# key = 'LOGCUBE' # 'LOGCUBE' or 'MAPS'
+# for plateifu in plateifu_list[:3000]:
+#     plateifu = plateifu.strip(" \t")
+#     plate, ifu = plateifu.split("-")[0].replace(" ", ""), plateifu.split("-")[1].replace(" ", "")
+#     file_url, save_path = get_url(plateifu, key=key)
+#     # print(file_url)
+#     # print(save_path)
+#     results = fetch_and_save(file_url, save_path)
 
 #     # # Make directory for cube and maps
 #     # print('Make directory for cube and maps')
@@ -92,4 +91,4 @@ for plateifu in plateifu_list[:3000]:
 
 
 # Clean directory tree
-remove_empty_dirs(path="/gscratch/astro/mmckay18/DATA/raw/")
+# remove_empty_dirs(path="/gscratch/astro/mmckay18/DATA/raw/")

@@ -8,9 +8,11 @@ from astropy.table import Table
 import argparse
 from fits_utils import BPT_diagnostic
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+# data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+# manga_catalogue_path = data_dir / 'raw/SDSS17Pipe3D_v3_1_1.fits'
+data_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA/')
+manga_catalogue_path = data_dir / 'raw/dapall-v3_1_1-3.1.0.fits'
 
-manga_catalogue_path = data_dir / 'raw/SDSS17Pipe3D_v3_1_1.fits'
 dat = Table.read(manga_catalogue_path, format='fits', hdu=1)
 cat_df = dat.to_pandas()
 cat_df['PLATEIFU'] = cat_df['plateifu'].apply(lambda x: x.decode())

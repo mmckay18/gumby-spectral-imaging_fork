@@ -19,7 +19,8 @@ from fits_utils import (
 def npy_datapoint_loader(path):
     return np.load(path)
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+# data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+data_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
