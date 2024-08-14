@@ -19,8 +19,7 @@ from fits_utils import (
     process_cube,
     process_map
 )
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
-
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA')
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--split_dir', '-s', type=str, default='OH_1',
@@ -103,6 +102,7 @@ if __name__ == '__main__':
                 # NOTE: this will try and download the logcube fits file if necessary
                 print(f'\tGenerating new cube:\n\t{cube_file}')
                 try:
+#                     print('Running process_cube')
                     process_cube(fits_file, cube_file)
                 except:
                     print('\t\tsomething bad happened')
@@ -116,6 +116,7 @@ if __name__ == '__main__':
                 print(f'\tMaking label map:\n\t{label_path}')
                 try:
                     process_map(fits_file, label_path, label_task=args.label_task)
+                    print('\t Process Map Completed')
                 except:
                     print('\t\tsomething bad happened')
                     continue

@@ -98,7 +98,8 @@ def plot_tm_confusion_matrix(
 
 def plot_training_curve(model_weights_dir, log=False, results_dir=None):
     if results_dir is None:
-        results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga/')
+#         results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga/')
+        results_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA/weights/')
 
     fig, (ax1, ax2, ax3) = plt.subplots(1,3, sharex=True, figsize=(12,3))
     [ax.set_xlabel('Epoch', size=12) for ax in [ax1,ax2,ax3]]

@@ -40,8 +40,8 @@ from data_fns import (
 import warnings
 warnings.filterwarnings('ignore', 'invalid value encountered')
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
-results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga/')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA')
+results_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/weights/')
 random_seed = 2147483647
 
 if __name__ == '__main__':

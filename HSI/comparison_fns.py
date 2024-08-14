@@ -14,7 +14,7 @@ from vis_fns import create_OH_map
 from regression import normalizeOxygenLabels
 from eval_utils import calc_regression_metrics
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
 
 def eval_alt_split(split_dir, label_task='N2', split='test', 
                    easy_splits=False, patch_norm='global', 

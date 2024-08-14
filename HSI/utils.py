@@ -6,8 +6,8 @@ label maps: data_dir / processed / labels / label_task / {plate-id}.npy
 
 import pathlib
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
-results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
+results_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/weights/')
 
 OH_bin_dict = {
     'default':{
@@ -18,6 +18,11 @@ OH_bin_dict = {
         'OH_bins':[8.34, 8.4, 8.44, 8.47, 8.5, 8.52, 8.55],
         #'OH_labels':['8.34', '8.40', '8.44', '8.47', '8.50', '8.52', '8.55', '8.64']
         'OH_labels':['8.31', '8.37', '8.42', '8.46', '8.48', '8.51', '8.54', '8.60']
+    },
+    'BPT':{
+        'OH_bins':[1.0, 2.0, 3.0],
+        'OH_labels':['None','SF', 'COMP', 'AGN',]
+#         'OH_labels':['0', '1', '2', '3',]
     }
 }
 
@@ -40,6 +45,11 @@ def get_index_to_name(key, log=False):
     return label_map
 
 def get_OH_bins_and_labels(key):
+    '''returns (bins, labels)
+    '''
+    return OH_bin_dict[key]['OH_bins'], OH_bin_dict[key]['OH_labels']
+
+def get_BPT_bins_and_labels(key):
     '''returns (bins, labels)
     '''
     return OH_bin_dict[key]['OH_bins'], OH_bin_dict[key]['OH_labels']

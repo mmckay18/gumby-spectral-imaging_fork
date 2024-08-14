@@ -162,6 +162,53 @@ class BinLogOHLabels(torch.nn.Module):
         encoded_output = np.digitize(input, bins=self.OH_bins)
         encoded_output = torch.from_numpy(encoded_output)
         return encoded_output
+    
+class BinBPTLabels(torch.nn.Module):
+    def __init__(self,
+                 BPT_key: str='default',
+                 encoder_type: str='int'):
+        '''Bins BPT values & encodes labels; returns (labels, encoded_labels)
+        encoder_type = ['int','ordinal','one_hot']
+        '''
+        super(BinLogBPTLabels, self).__init__()
+        BPT_bins, BPT_labels = get_BPT_bins_and_labels(BPT_key)
+        assert BPT_bins is not None
+        assert len(BPT_labels) == (len(BPT_bins) + 1)
+        assert encoder_type in ['int', 'ordinal', 'one_hot']
+
+        self.BPT_bins = BPT_bins
+        self.BPT_labels = BPT_labels
+        self.encoder_type = encoder_type
+        self.name_to_index = self._get_encoder_dict()
+
+    def _get_encoder_dict(self):
+        """Sets name_to_index dictionary for given encoder type"""
+        if self.encoder_type == 'ordinal':
+            name_to_index = {label: [1 if j <= i else 0 for j in range(len(self.BPT_labels))] for i, label in enumerate(self.BPT_labels)}
+        elif self.encoder_type == 'one_hot':
+            name_to_index = {label: [1 if j == i else 0 for j in range(len(self.BPT_labels))] for i, label in enumerate(self.BPT_labels)}
+        else:
+            name_to_index = {label: i for i, label in enumerate(self.BPT_labels)}
+        return name_to_index
+
+    def forward(self, input):
+        """Input values, output (labels, encoded_labels)"""
+        encoded_output = np.digitize(input, bins=self.BPT_bins)
+        encoded_output = torch.from_numpy(encoded_output)
+        return encoded_output
+
+def get_BPT_bins_and_labels(BPT_key):
+    # Define your bins and labels here
+    # Example (replace with actual BPT diagnostic data):
+    if BPT_key == 'default':
+        BPT_bins = [0.0, 1.0, 2.0, 3.0]
+        BPT_labels = ['None', 'SF', 'Composite', 'AGN']
+    else:
+        # Customize for different BPT_key if needed
+        BPT_bins = []
+        BPT_labels = []
+    return BPT_bins, BPT_labels
+    
 
 class HSIPatchDataset(Dataset):
     def __init__(

@@ -10,8 +10,8 @@ from fits_utils import BPT_diagnostic
 
 # data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
 # manga_catalogue_path = data_dir / 'raw/SDSS17Pipe3D_v3_1_1.fits'
-data_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA/')
-manga_catalogue_path = data_dir / 'raw/dapall-v3_1_1-3.1.0.fits'
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
+manga_catalogue_path = data_dir / 'raw/SDSS17Pipe3D_v3_1_1.fits'
 
 dat = Table.read(manga_catalogue_path, format='fits', hdu=1)
 cat_df = dat.to_pandas()
@@ -30,7 +30,6 @@ if __name__ == '__main__':
     parser.add_argument('--normalize', action='store_true', default=False)
     # ------- model parameters ----------------
     args = parser.parse_args()
-    
     # select centrally SF galaxies
     OIII_key = f'log_OIII_Hb_cen'
     NII_key = f'log_NII_Ha_cen'
@@ -38,30 +37,41 @@ if __name__ == '__main__':
     cat_df.loc[cat_df[OIII_key] < tmp_SF,'BPT_flag'] = 1
     cat_df.loc[(cat_df[OIII_key] >= tmp_SF) & (cat_df['log_OIII_Hb_cen'] < tmp_AGN),'BPT_flag'] = 2
     cat_df.loc[(cat_df[OIII_key] >= tmp_AGN),'BPT_flag'] = 3
-    cat_df.loc[(cat_df[OIII_key] > 1.5),'BPT_flag'] = np.nan
-    cat_df.loc[(cat_df[OIII_key] < -1.5),'BPT_flag'] = np.nan
-    cat_df.loc[(cat_df[NII_key] > 1.0),'BPT_flag'] = np.nan
-    cat_df.loc[(cat_df[NII_key] < -1.5),'BPT_flag'] = np.nan
+    
+    if args.label_task == 'BPT':
+        pass   
+    else:    
+        cat_df.loc[(cat_df[OIII_key] > 1.5),'BPT_flag'] = np.nan
+        cat_df.loc[(cat_df[OIII_key] < -1.5),'BPT_flag'] = np.nan
+        cat_df.loc[(cat_df[NII_key] > 1.0),'BPT_flag'] = np.nan
+        cat_df.loc[(cat_df[NII_key] < -1.5),'BPT_flag'] = np.nan
 
     # using galaxies that are within 1st and 99th percentile in each of these properties
     cols_of_interest = ['EW_Ha_cen']
     condition_list = [((cat_df[key] > cat_df[key].quantile(0.05)) & (cat_df[key] < cat_df[key].quantile(0.95)))for key in cols_of_interest]
 
     # make cuts on BPT, SFR, Av, stellar mass, central metallicity, IFU size, inclination
-    condition_list += [(cat_df['BPT_flag'] == 1)]
+    if args.label_task == 'BPT':
+        pass
+    else:
+        condition_list += [(cat_df['BPT_flag'] == 1)]
+    
     condition_list += [(cat_df['log_SFR_Ha'] > 0.0)]
-    condition_list += [(cat_df['log_Mass'] > 10.25)]
+#     condition_list += [(cat_df['log_Mass'] > 10.25)]
+#     condition_list += [(cat_df['log_Mass'] <= 11.25)]
+    condition_list += [(cat_df['log_Mass'] > 9.25)]
     condition_list += [(cat_df['log_Mass'] <= 11.25)]
-    condition_list += [(cat_df['OH_Pet04_O3N2_Re_fit'] <= 8.8)]
+#     condition_list += [(cat_df['OH_Pet04_O3N2_Re_fit'] <= 8.8)]
     condition_list += [(cat_df['Av_gas_Re'] < 2.0)]
     condition_list += [(cat_df['IFUSIZE'] == '127') | (cat_df['IFUSIZE'] == '91') | (cat_df['IFUSIZE'] == '61')]
-    condition_list += [(cat_df['nsa_inclination'] <= 30.0)]
+#     condition_list += [(cat_df['nsa_inclination'] <= 45.0)]
     inds = np.logical_and.reduce(condition_list)
 
     # make dataframe of galaxies
     df = cat_df[inds].copy()
+    df = df.sample(n=200) #! randomly sample catalog dataframe to limit the number of datacubes
     df.reset_index(inplace=True)
-    print(len(cat_df), len(df))
+    print(f'Catalog #rows: {len(cat_df)}, Catalog After cuts #rows: {len(df)}')
 
     # create metallicity and mass bins to sample from
     cols_to_bin = ['log_NII_Ha_cen']#,'log_OIII_Hb_cen']
@@ -79,7 +89,6 @@ if __name__ == '__main__':
     min_gals = 8
     max_gals = 50
     for group, grouped_df in grouper:
-
         ngals = len(grouped_df)
         if ngals > max_gals:
             tmp_df = grouped_df.sample(n=max_gals)
@@ -125,4 +134,5 @@ if __name__ == '__main__':
         inds = new_df['split'] == split
         print(f'{split.title()}: {len(new_df[inds])}')
         output_csv = csv_dir / f'{split}_fits.csv'
+#         output_csv = csv_dir / f'{split}-{args.patch_norm}.csv'
         new_df[inds]['fits_file'].to_csv(output_csv, index=False, header=False)

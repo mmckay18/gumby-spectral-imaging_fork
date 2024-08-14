@@ -4,9 +4,14 @@ import argparse
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
+
 def bin_OH_labels(input, OH_bins = [8.40, 8.44, 8.48, 8.52, 8.56]):
     output = np.digitize(input, bins=OH_bins)
+    return output
+
+def bin_BPT_labels(input, BPT_bins = [1.0, 2.0, 3.0]):
+    output = np.digitize(input, bins=BPT_bins)
     return output
 
 if __name__ == '__main__':
@@ -29,6 +34,8 @@ if __name__ == '__main__':
     
     if args.label_task == 'logOH':
         df['bin_label'] = bin_OH_labels(df['label'])
+    elif args.label_task == 'BPT':
+        df['bin_label'] = bin_BPT_labels(df['label'])
     else:
         df['bin_label'] = df['label'].copy()
 

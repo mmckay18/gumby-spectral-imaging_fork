@@ -10,7 +10,7 @@ import pandas as pd
 #from gumby_utils.constants import data_dir, thread_limit
 #thread_limit(1)
 
-data_dir = pathlib.Path('/gscratch/astro/mmckay18/DATA/')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA')
 fits_dir = data_dir / "raw"
 
 def get_url(PLATEIFU, key='MAPS'):
@@ -19,7 +19,9 @@ def get_url(PLATEIFU, key='MAPS'):
     for input row['PLATEIFU']
     key = 'MAPS' or 'LOGCUBE'
     '''
+    print(f"manga-{PLATEIFU}-{key}-SPX-MILESHC-MASTARSSP.fits.gz")
     file_stem = f"manga-{PLATEIFU}-{key}-SPX-MILESHC-MASTARSSP.fits.gz"
+    print('file_stem')
     save_path = fits_dir / f"{PLATEIFU.replace('-','/')}" / file_stem
     if not save_path.parent.exists():
         save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,9 +44,14 @@ def fetch_and_save(url, save_path, overwrite=True):
         return url, True, None
 
 def download_single_cube(fits_file, key='LOGCUBE'):
+    print('Downloading single cube function')
+    print(f'{fits_file}')
     plateifu = '-'.join(fits_file.split('/')[-3:-1])
+    print(f'PLATEIFU: {plateifu}')
     output = get_url(plateifu, key=key)
-    results = fetch_and_save(*output)
+    print(f'URL to download: {output}')
+    results = fetch_and_save(*output) # changed *output
+    print(f'Fetch results: {results}')
     # print(output, results)
     return results
 

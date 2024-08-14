@@ -10,8 +10,8 @@ from plotting import plot_tm_confusion_matrix
 import pickle
 from comparison_fns import eval_alt_split
 from utils import get_index_to_name, get_num_classes
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
-results_dir = pathlib.Path('/qfs/projects/thidwick/weights/manga/')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
+results_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/weights/')
 
 def quick_eval(
     arch_type:str='simplenet',
@@ -30,7 +30,10 @@ def quick_eval(
     ):
     if base_results_dir is None:
         base_results_dir = results_dir
-    model_name = f'{split_dir}_{model_suff}'
+    if model_suff is None:
+        model_name = f'{split_dir}'
+    else:
+        model_name = f'{split_dir}_{model_suff}'
     easy_splits = True if 'easy' in model_name else False
     print(f'---- {arch_type} / {model_name} ----------')
     num_classes = get_num_classes(OH_key)
@@ -103,7 +106,8 @@ def quick_eval(
             output_dict['CM'],
             class_list=class_list,
             save_figure=save_figure,
-            output_path=f'./figs/confusion/{arch_type}_{model_name}.png',
+#             output_path=f'./figs/confusion/{arch_type}_{model_name}.png',
+            output_path=f'/gscratch/astro/mmckay18/FIGURES/{arch_type}_{model_name}.png',
             normalized=True,
         )
         # calculate metrics for FWHM ratio -----

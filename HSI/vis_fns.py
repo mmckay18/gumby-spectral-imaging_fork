@@ -2,17 +2,23 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pathlib
-from utils import get_OH_bins_and_labels, get_index_to_name
+from utils import get_OH_bins_and_labels, get_index_to_name, get_BPT_bins_and_labels
 
 def bin_OH_labels(input, OH_key='default'):
     OH_bins, _ = get_OH_bins_and_labels(OH_key)
     output = np.digitize(input, bins=OH_bins)
     return output
 
+def bin_BPT_labels(input, OH_key='BPT'):
+    OH_bins, _ = get_BPT_bins_and_labels(OH_key)
+    output = np.digitize(input, bins=OH_bins)
+    return output
+
+
 def create_OH_map(label_path, OH_key='default', use_int_labels=True, 
                   task='classification',regression_norm='scaledmax'):
     OH_bins, _ = get_OH_bins_and_labels(OH_key)
-    input = np.load(label_path)
+    input = np.load(label_path, allow_pickle=True)
     input = np.ma.masked_array(input, mask=(input == 0), fill_value=0)
     if use_int_labels:
         output = np.digitize(input, bins=OH_bins)

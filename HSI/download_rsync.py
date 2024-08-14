@@ -18,10 +18,10 @@ from download_utils import *
 
 # # Downloading data DAP Maps and Pipe3D Maps from MaNGA MPL11
 
-# # get dap and pipe3d catalogs for plateifu
-# dap_url = "https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/dapall-v3_1_1-3.1.0.fits"
-# dapall_save_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"  # Update this path to your specific remote directory path
-# download_file(dap_url, dapall_save_path)
+# get dap and pipe3d catalogs for plateifu
+dap_url = "https://data.sdss.org/sas/dr17/manga/spectro/analysis/v3_1_1/3.1.0/dapall-v3_1_1-3.1.0.fits"
+dapall_save_path = "/gscratch/scrubbed/mmckay18/DATA/raw/dapall-v3_1_1-3.1.0.fits"  # Update this path to your specific remote directory path
+download_file(dap_url, dapall_save_path)
 # dapall_fits_path = "/gscratch/astro/mmckay18/DATA/dapall-v3_1_1-3.1.0.fits"
 # dapall_df = fits_to_dataframe(dapall_fits_path)
 # dapall_df.to_csv("/gscratch/astro/mmckay18/gumby-spectral-imaging_fork/HSI/sdss_manga_dapall_data/drpall_subsample.csv", index=False)
@@ -35,7 +35,7 @@ from download_utils import *
 
 print("Downloading Pipe3D data...")
 pipe3d_url = "https://data.sdss.org/sas/dr17/manga/spectro/pipe3d/v3_1_1/3.1.1/SDSS17Pipe3D_v3_1_1.fits"
-pipe3d_save_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"  # Update this path to your specific remote directory path
+pipe3d_save_path = "/gscratch/scrubbed/mmckay18/DATA/raw/SDSS17Pipe3D_v3_1_1.fits"  # Update this path to your specific remote directory path
 download_file(pipe3d_url, pipe3d_save_path)
 # # Paths to the FITS files
 # pipe3d_fits_path = "/gscratch/astro/mmckay18/DATA/pipe3d-v2_4_3-2.4.3.fits"

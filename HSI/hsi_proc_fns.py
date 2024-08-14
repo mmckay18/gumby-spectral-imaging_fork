@@ -113,11 +113,15 @@ def patchify_cube(cube_file, label_path, patch_size=7,
                   patch_save_dir=None, patch_norm='global'):
     """Read in h5 file and generate patches
     """
+    print('Start patchify')
     # (74, 74), (74,74,2040)
     flux_cube = h5_datapoint_loader(cube_file)
+#     print(flux_cube.shape)
     
     if '.npy' in label_path:
+#         print(f'\tLabel Path: {label_path}')
         label_map = np.load(label_path)
+#         print(label_map.shape)
     else:
         label_map = np.array(Image.open(label_path))[..., 0]
     
@@ -151,6 +155,7 @@ def patchify_cube(cube_file, label_path, patch_size=7,
             # /path/to/dir/{plate-IFU}_size_x-y_label.npy
             patch_str = '-'.join([str(i) for i in patch_index])
             output_patch_path = patch_save_dir / f"{patch_save_dir.name}_{global_size}_{patch_str}_{patch_lab}.npy"
+#             print(output_patch_path)
             np.save(output_patch_path, this_patch) # can't save masked arrays yet
             # output path and label for CSV
             this_dict = {

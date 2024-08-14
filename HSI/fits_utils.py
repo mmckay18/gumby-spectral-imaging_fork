@@ -14,8 +14,8 @@ from mangadap.util.sampling import Resample
 from mangadap.util.fileio import channel_dictionary, channel_units
 from download_utils import download_single_cube
 
-data_dir = pathlib.Path('/qfs/projects/gumby/data/manga')
-alt_dir = pathlib.Path('/qfs/projects/manga')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA')
+alt_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA')
 
 # load up manga catalog once -----------------------------------------
 manga_catalogue_path = data_dir / "raw/dapall-v3_1_1-3.1.0.fits"
@@ -32,7 +32,7 @@ def process_cube(
     cube_file,
     new_wave_range=[5000.0, 8000.0],
     new_num_wave=2040,
-    verbose=False,
+    verbose=True,
 ):
     """Read in fits file, process, and write datacube to H5 file.
     INPUTS:
@@ -41,23 +41,46 @@ def process_cube(
         new_num_wave: number of wavelength bins
         verbose (bool): verbosity of printed outputs
     """
-
-    plate_ifu = "-".join(fits_file.split("/")[-3:-1])
+#     print('', f'{fits_file}, {type(fits_file)}') #debugging
+#     fits_file = str(fits_file)
+#     plate_ifu = "-".join(fits_file.split("/")[-3:-1])
+    print(fits_file)
+#     print('48')
+    plate_ifu = "-".join(str(fits_file).split("/")[-3:-1])
     z = cat_df["NSA_Z"][cat_df["PLATEIFU"] == plate_ifu].item()
     fits_file = pathlib.Path(fits_file)
+#     print(f'\tPlateIFU: {plate_ifu}, z: {z} \n\t Path: {fits_file}') # debugging
     if not fits_file.exists():
-        print(f'\tNo LOGCUBE fits file exists!\n\t{fits_file}')
+#         print('54')
+        print(f'\tNo LOGCUBE fits file exists \n\t{fits_file}')
         fits_file.parent.mkdir(parents=True, exist_ok=True)
         copy_from_path = alt_dir / str(fits_file.relative_to(data_dir))
+#         print(f'\tCopy_from_path: {copy_from_path}') # debugging
         if copy_from_path.exists():
             print('\tCopying from alt dir')
             copy_result = subprocess.run([f'cp {copy_from_path.as_posix()} {fits_file}'], stdout=subprocess.PIPE, shell=True)
         else:
             print(f'\tDownloading')
-            dl_results = download_single_cube(fits_file, key="LOGCUBE")
+#             # Myles Fix -
+#             print(f'\tGet URL from plateifu: {plate_ifu}, {type(plate_ifu)}')
+#             url_str, save_path = get_url(PLATEIFU=plate_ifu, key='LOGCUBE')
+#             print(f'\tURL : {url_str}')
+#             print(f'\tsave : {save_path}')
+            
+#             print('Fetch and Save')
+#             fetch_and_save(url_str, fits_file)
+#             download_file(url_str, save_path)
+            
+            print('\t\tDownloading Single Cube')
+            dl_results = download_single_cube(str(fits_file), key="LOGCUBE")  # Issue but dont know what
+            print(f'\tDownload results: {dl_results}')
     
     # read in data
+    print(f'\n\t Start Bitmask')
+    fits_file = str(fits_file)
+    print(f'\tFITSFILE: {fits_file}, {type(fits_file)}')
     hdu_cube = fits.open(fits_file)
+    print('83')
 
     #label_map = np.array(Image.open(label_file))[..., 0]
     # Declare the bitmask object to mask selected pixels
@@ -115,7 +138,9 @@ def process_map(fits_file, label_file, save_file=True, label_task='logOH', diagn
     calls "generate_BPT_labels" or "generate_logOH_labels"
     diagnostic is for logOH task, can be O3N2, N2, N2O2...
     """
+    print('\n\t\tStarr proessing map')
     fits_file = fits_file.replace("LOGCUBE", "MAPS")
+    print(f'\tFITS File Map: {fits_file}')
 
     if not pathlib.Path(fits_file).exists():
         print(f'No MAP fits file exists!\n\t{fits_file}')
@@ -136,11 +161,27 @@ def process_map(fits_file, label_file, save_file=True, label_task='logOH', diagn
         hdu_maps = fits.open(fits_file)
 
     if label_task == 'BPT':
+        print('\tMaking BPT using generate_BPT_labels')
         label_spaxels = generate_BPT_labels(hdu_maps)
-        im = Image.fromarray(label_spaxels.filled()).convert("RGB")
-        if save_file:
-            im.save(label_file)
-        return im
+        label_spaxels = np.nan_to_num(label_spaxels, nan=0.0, posinf=0.0, neginf=0.0)
+#         print(f'Label: {np.unique(label_spaxels, return_counts=True)}')
+#         im = Image.fromarray(label_spaxels.filled()).convert("RGB")
+#         print(im)
+#         if save_file:
+#             print(label_file)
+#             im.save(label_file)
+        # Myles Fix
+        print(f'Label_filepath {label_file}, {type(label_file)}')
+        try:
+            np.save(label_file, label_spaxels)
+            print(f"Array saved successfully to {output_patch_path}")
+        except OSError as e:
+            print(f"OS error occurred: {e}")
+        except Exception as e:
+            print(f"Error occurred: {e}")
+    
+#         print(f'Label Spaxel Shape numby {label_spaxels.shape}, {label_spaxels.mean}')
+        return label_spaxels
     elif label_task == 'logOH':
         label_spaxels = generate_logOH_labels(hdu_maps, diagnostic='O3N2')
         label_spaxels = label_spaxels.round(decimals=3).filled(0.0)
@@ -162,46 +203,117 @@ def BPT_diagnostic(log_NII_Ha):
     AGN_lim = (0.61 / (log_NII_Ha - 0.47)) + 1.19
     return SF_lim, AGN_lim
 
+# def generate_BPT_labels(hdu_maps):
+#     print('/nStart generate_BPT_labels')
+#     emlc = channel_dictionary(hdu_maps, "EMLINE_GFLUX")
+#     mask_ext = hdu_maps["EMLINE_GFLUX"].header["QUALDATA"]
+
+#     halpha_flux = np.ma.MaskedArray(
+#         hdu_maps["EMLINE_GFLUX"].data[emlc["Ha-6564"]],
+#         mask=hdu_maps[mask_ext].data[emlc["Ha-6564"]] > 0,
+#     )
+#     hbeta_flux = np.ma.MaskedArray(
+#         hdu_maps["EMLINE_GFLUX"].data[emlc["Hb-4862"]],
+#         mask=hdu_maps[mask_ext].data[emlc["Hb-4862"]] > 0,
+#     )
+#     n2_flux = np.ma.MaskedArray(
+#         hdu_maps["EMLINE_GFLUX"].data[emlc["NII-6585"]],
+#         mask=hdu_maps[mask_ext].data[emlc["NII-6585"]] > 0,
+#     )
+#     o3_flux = np.ma.MaskedArray(
+#         hdu_maps["EMLINE_GFLUX"].data[emlc["OIII-5008"]],
+#         mask=hdu_maps[mask_ext].data[emlc["OIII-5008"]] > 0,
+#     )
+#     hdu_maps.close()
+
+#     # Compute Ratios
+#     log_OIII_Hb = np.log10(o3_flux / hbeta_flux)
+#     log_NII_Ha = np.log10(n2_flux / halpha_flux)
+#     output_mask = log_OIII_Hb.mask & log_NII_Ha.mask
+
+#     # Calculate the estimated value for OIII/Hbeta map from NII/Halpha
+#     SF_limit, AGN_limit = BPT_diagnostic(log_NII_Ha)
+
+#     # label map
+#     bpt_spaxels = np.zeros_like(log_OIII_Hb)
+#     bpt_spaxels[log_OIII_Hb <= SF_limit] = 1
+#     bpt_spaxels[(log_OIII_Hb > SF_limit) & (log_OIII_Hb <= AGN_limit)] = 2
+#     bpt_spaxels[log_OIII_Hb > AGN_limit] = 3
+#     bpt_spaxels = np.ma.MaskedArray(
+#         bpt_spaxels, 
+#         mask=output_mask, 
+#         fill_value=0.0
+#     )
+    
+    
+#     # Plot
+#     print('Plotting BPT')
+#     print(f'label Map info \n\t{type(bpt_spaxels)} \n\t{bpt_spaxels.shape} \n\t{bpt_spaxels.max} \n\t{bpt_spaxels.min}')
+# #     plt.imshow(output_mask, vmin=0, vmax=3)
+# #     plt.show()
+    
+    
+#     print('Finished Making BPT labels!')
+#     return bpt_spaxels
 def generate_BPT_labels(hdu_maps):
+    print('\nStart generate_BPT_labels')
+
+    # Retrieve channel dictionary for emission line fluxes
     emlc = channel_dictionary(hdu_maps, "EMLINE_GFLUX")
     mask_ext = hdu_maps["EMLINE_GFLUX"].header["QUALDATA"]
 
-    halpha_flux = np.ma.MaskedArray(
-        hdu_maps["EMLINE_GFLUX"].data[emlc["Ha-6564"]],
-        mask=hdu_maps[mask_ext].data[emlc["Ha-6564"]] > 0,
-    )
-    hbeta_flux = np.ma.MaskedArray(
-        hdu_maps["EMLINE_GFLUX"].data[emlc["Hb-4862"]],
-        mask=hdu_maps[mask_ext].data[emlc["Hb-4862"]] > 0,
-    )
-    n2_flux = np.ma.MaskedArray(
-        hdu_maps["EMLINE_GFLUX"].data[emlc["NII-6585"]],
-        mask=hdu_maps[mask_ext].data[emlc["NII-6585"]] > 0,
-    )
-    o3_flux = np.ma.MaskedArray(
-        hdu_maps["EMLINE_GFLUX"].data[emlc["OIII-5008"]],
-        mask=hdu_maps[mask_ext].data[emlc["OIII-5008"]] > 0,
-    )
+    # Function to create masked arrays for emission lines
+    def create_masked_array(line_key):
+        return np.ma.MaskedArray(
+            hdu_maps["EMLINE_GFLUX"].data[emlc[line_key]],
+            mask=hdu_maps[mask_ext].data[emlc[line_key]] > 0,
+        )
+
+    # Create masked arrays for each required emission line
+    halpha_flux = create_masked_array("Ha-6564")
+    hbeta_flux = create_masked_array("Hb-4862")
+    n2_flux = create_masked_array("NII-6585")
+    o3_flux = create_masked_array("OIII-5008")
+
+    # Close HDU maps to free resources
     hdu_maps.close()
 
-    # Compute Ratios
-    log_OIII_Hb = np.log10(o3_flux / hbeta_flux)
-    log_NII_Ha = np.log10(n2_flux / halpha_flux)
-    output_mask = log_OIII_Hb.mask & log_NII_Ha.mask
+    # Convert masked arrays to regular ndarrays filled with NaN for masked values
+    halpha_flux = halpha_flux.filled(np.nan)
+    hbeta_flux = hbeta_flux.filled(np.nan)
+    n2_flux = n2_flux.filled(np.nan)
+    o3_flux = o3_flux.filled(np.nan)
+
+    # Compute logarithmic ratios, handling divide by zero issues
+    with np.errstate(divide='ignore', invalid='ignore'):
+        log_OIII_Hb = np.log10(np.divide(o3_flux, hbeta_flux, where=hbeta_flux!=0))
+        log_NII_Ha = np.log10(np.divide(n2_flux, halpha_flux, where=halpha_flux!=0))
+
+    # Mask invalid entries and convert to regular ndarrays
+    log_OIII_Hb = np.ma.masked_invalid(log_OIII_Hb).filled(np.nan)
+    log_NII_Ha = np.ma.masked_invalid(log_NII_Ha).filled(np.nan)
+
+    # Combine masks for output
+    output_mask = np.isnan(log_OIII_Hb) & np.isnan(log_NII_Ha)
 
     # Calculate the estimated value for OIII/Hbeta map from NII/Halpha
     SF_limit, AGN_limit = BPT_diagnostic(log_NII_Ha)
 
-    # label map
+    # Generate BPT spaxel labels
     bpt_spaxels = np.zeros_like(log_OIII_Hb)
     bpt_spaxels[log_OIII_Hb <= SF_limit] = 1
     bpt_spaxels[(log_OIII_Hb > SF_limit) & (log_OIII_Hb <= AGN_limit)] = 2
     bpt_spaxels[log_OIII_Hb > AGN_limit] = 3
-    bpt_spaxels = np.ma.MaskedArray(
-        bpt_spaxels, 
-        mask=output_mask, 
-        fill_value=0.0
-    )
+
+    # Apply the mask to the BPT spaxels and set fill value to 0
+    bpt_spaxels = np.where(output_mask, 0, bpt_spaxels)
+    # Check for problem values
+    
+    # Remove problematic values else OSError: problem writing element 1024 to file may occur
+    bpt_spaxels = np.nan_to_num(bpt_spaxels, nan=0.0, posinf=0.0, neginf=0.0)
+    
+    print(f'Has nan: {np.isnan(bpt_spaxels)} +inf: {np.isposinf(bpt_spaxels)} -inf: {np.isneginf(bpt_spaxels)}')
+    
     return bpt_spaxels
 
 # Metallicity labels ----------------------------------------------------------

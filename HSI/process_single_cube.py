@@ -17,7 +17,7 @@ from fits_utils import (
     process_cube,
     process_map
 )
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+data_dir = pathlib.Path('/scr/mmckay18/DATA/')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         try:
             process_cube(fits_file, cube_file)
         except:
-            print('something bad happened')
+            print('something bad happened while processing cube')
             exit()
     else:
         print(f'\tCube already exists!\n\t{cube_file}')
@@ -78,10 +78,12 @@ if __name__ == '__main__':
     if not pathlib.Path(label_path).exists():
         # NOTE: this will try and download the MAP fits file if necessary
         print(f'\tMaking label map:\n\t{label_path}')
+        print(f'\tFITS Map file: {fits_file}')
         try:
             process_map(fits_file, label_path, label_task=args.label_task)
+            print('\t Completed Process Map')
         except:
-            print('something bad happened')
+            print('something bad happened while processing map')
             exit()
     
     # generate patches

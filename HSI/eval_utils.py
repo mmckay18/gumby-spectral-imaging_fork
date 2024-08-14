@@ -33,7 +33,7 @@ from regression import(
     reg_map_collate_fn
 )
 
-data_dir = pathlib.Path('/qfs/projects/thidwick/manga')
+data_dir = pathlib.Path('/gscratch/scrubbed/mmckay18/DATA/')
 
 def bin_OH_map(input, OH_key='default'):
     OH_bins, _ = get_OH_bins_and_labels(OH_key)
@@ -335,6 +335,9 @@ def datacube_evaluator(fits_file, arch_type='ssftt', model_weights_dir=None, nor
         num_classes=1
     else:
         logging.info('Using CLASSIFICATION presents')
+#         if OH_key == 'BPT':
+#             label_fn = BinBPTLabels(OH_key=OH_key)
+#         else:
         label_fn = BinLogOHLabels(OH_key=OH_key)
         collate_fn = map_collate_fn
         num_classes = get_num_classes(OH_key)
